@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
+  <title>ERC-2098: Compact Signature Representation</title>
+  <style>
+    * {
+      margin: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto, arial, sans-serif;
+      background: hsl(63deg 50% 90%);
+      color: hsl(63deg 50% 10%);
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-block: 24px;
+      margin-block-end: 24px;
+      border-block-end: 2px solid hsl(63deg 50% 70%);
+    }
+
+    form {
+      inline-size: min(1440px, 100% - 32px);
+      margin-inline: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    label {
+      display: block;
+      margin-block-end: 4px;
+    }
+
+    textarea {
+      padding: 4px;
+      font-family: inherit;
+      min-inline-size: min(720px, 100% - 32px);
+      min-block-size: 6ch;
+      font-size: 1rem;
+    }
+
+    button {
+      inline-size: fit-content;
+      font-size: 1rem;
+      padding-inline: 12px;
+      padding-block: 6px;
+      cursor: pointer;
+    }
+
+    output {
+      display: none;
+    }
+
+    code {
+      display: block;
+      padding: 4px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>ERC-2098: Compact Signature Representation</h1>
+    <p><a href="https://eips.ethereum.org/EIPS/eip-2098">ERC-2098</a> specifies a more efficient signature format that saves gas.</p>
+  </header>
+
+  <main>
+    <form>
+      <div>
+        <label for="message">Message</label>
+        <textarea id="message" name="message" placeholder="Hello, world!"></textarea>
+      </div>
+
+      <button>Sign</button>
+
+      <output>
+        <div>
+          <label for="canonical-signature">Canonical signature</label>
+          <code id="canonical-signature"></code>
+        </div>
+        <div>
+          <label for="compact-signature">ERC-2098 compact signature</label>
+          <code id="compact-signature"></code>
+        </div>
+      </output>
+    </form>
+  </main>
+
+  <script type="module">
+    import { toCompact } from '/erc-2098.js';
+
+    function toCanonicalParts(signature) {
+      return {
+        r: `0x${signature.substring(2, 66)}`,
+        s: `0x${signature.substring(66, 130)}`,
+        v: `0x${signature.substring(130)}`
+      }
+    }
+
+    function toCompactParts(signature) {
+      const compactSignature = toCompact(signature);
+      return {
+        r: `0x${compactSignature.substring(2, 66)}`,
+        compactS: `0x${compactSignature.toString(66)}`
+      }
+    }
+
+    document.querySelector('form').addEventListener('submit', async e => {
+      e.preventDefault();
+
+      const message = new FormData(e.target).get('message');
+      const array = [...new TextEncoder().encode(message)];
+      const hex = `0x${array.map(v => v.toString(16).padStart(2, '0')).join('')}`;
+
+      const currentAccount = (await ethereum.request({ method: 'eth_requestAccounts' }))[0];
+      const canonicalSignature = await ethereum.request({
+        method: 'personal_sign',
+        params: [hex, currentAccount, '']
+      });
+      const compactSignature = toCompact(canonicalSignature);
+
+      document.getElementById('canonical-signature').textContent = canonicalSignature;
+      document.getElementById('compact-signature').textContent = compactSignature;
+      document.querySelector('output').style.display = 'block';
+    });
+  </script>
+</body>
+
+</html>
