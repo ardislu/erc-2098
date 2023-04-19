@@ -109,7 +109,7 @@
       const compactSignature = toCompact(signature);
       return {
         r: `0x${compactSignature.substring(2, 66)}`,
-        compactS: `0x${compactSignature.toString(66)}`
+        vs: `0x${compactSignature.toString(66)}`
       }
     }
 
